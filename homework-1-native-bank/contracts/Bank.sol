@@ -7,12 +7,15 @@ contract Bank is INativeBank {
     address public owner;
     mapping(address => uint256) private accountBalances;
 
-    constructor(){
+    constructor() {
         owner = msg.sender;
     }
 
+    /**
+     * @dev Модификатор, разрешающий выполнение только владельцу контракта
+     */
     modifier onlyOwner {
-        require(msg.sender == owner);
+        require(msg.sender == owner, "You are not the owner");
         _;
     }
 
@@ -29,10 +32,9 @@ contract Bank is INativeBank {
     }
 
     function deposit() public payable override {
-        require(msg.value > 0);
-        unchecked {
-            accountBalances[msg.sender] += msg.value;
-        }
+        require(msg.value > 0, "Zero deposit isn't allowed");
+
+        accountBalances[msg.sender] += msg.value;
         emit Deposit(msg.sender, msg.value);
     }
 
@@ -44,16 +46,18 @@ contract Bank is INativeBank {
         if (balance < amount) {
             revert WithdrawalAmountExceedsBalance(msg.sender, amount, balance);
         }
-        unchecked {
-            accountBalances[msg.sender] -= amount;
-        }
+        accountBalances[msg.sender] -= amount;
+
         payable(msg.sender).transfer(amount);
         emit Withdrawal(msg.sender, amount);
     }
 
     function withdrawAll() external onlyOwner {
-        uint256 amount = address(this).balance;
-        payable(owner).transfer(amount);
-        emit Withdrawal(msg.sender, amount);
+        uint256 selfBalance = address(this).balance;
+        require(selfBalance > 0, "No money in native bank");
+
+        (bool sent,) = payable(owner).call{value: selfBalance}("");
+        require(sent, "withdrawAll failed");
+        emit Withdrawal(msg.sender, selfBalance);
     }
 }
