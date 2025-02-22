@@ -8,22 +8,17 @@ import {Ownable} from "../util/Ownable.sol";
 import {StringUtils} from "../util/StringUtils.sol";
 
 contract ScamNFT is IERC721, IERC721Metadata, Ownable {
+    string constant public name = "ScamNFT1337";
+    string constant public symbol = "SCM";
+
     using StringUtils for uint256;
-    mapping(uint256 tokenId => address owner) private _tokenOwners;
-    mapping(address owner => uint256 balance) private _balances;
-    mapping(uint256 tokenId => address approved) private _allowances;
-    mapping(address owner => mapping(address operator => bool approved)) private _operatorApprovals;
+    mapping(uint256 tokenId => address owner) public tokenOwners;
+    mapping(address owner => uint256 balance) public balances;
+    mapping(uint256 tokenId => address approved) public allowances;
+    mapping(address owner => mapping(address operator => bool approved)) public operatorApprovals;
 
     constructor() Ownable(msg.sender) {
 
-    }
-
-    function name() external pure returns (string memory) {
-        return "ScamNFT1337";
-    }
-
-    function symbol() external pure returns (string memory) {
-        return "SCM";
     }
 
     function tokenURI(uint256 tokenId) external view returns (string memory) {
@@ -36,41 +31,28 @@ contract ScamNFT is IERC721, IERC721Metadata, Ownable {
      */
     function balanceOf(address owner) external view returns (uint256) {
         require(owner != address(0), "Zero address isn't allowed in balanceOf");
-        return _balances[owner];
+        return balances[owner];
     }
 
     /**
      * Владелец токена
      */
     function ownerOf(uint256 tokenId) external view returns (address) {
-        return _ownerOf(tokenId);
-    }
-
-    function _ownerOf(uint256 tokenId) internal view returns (address) {
-        return _requireMinted(tokenId);
+        return tokenOwners[tokenId];
     }
 
     /**
      * Разрешение на использование токена
      */
     function getApproved(uint256 tokenId) external view returns (address) {
-        return _getApproved(tokenId);
-    }
-
-    function _getApproved(uint256 tokenId) internal view returns (address) {
-        _requireMinted(tokenId);
-        return _allowances[tokenId];
+        return allowances[tokenId];
     }
 
     /**
      * Разрешение на использование всех токенов
      */
     function isApprovedForAll(address owner, address operator) external view returns (bool) {
-        return _isApprovedForAll(owner, operator);
-    }
-
-    function _isApprovedForAll(address owner, address operator) internal view returns (bool) {
-        return _operatorApprovals[owner][operator];
+        return operatorApprovals[owner][operator];
     }
 
     /**
@@ -79,9 +61,9 @@ contract ScamNFT is IERC721, IERC721Metadata, Ownable {
     function approve(address approved, uint256 tokenId) external {
         address owner = _requireMinted(tokenId);
         require(approved != owner, "Self-approve isn't allowed");
-        require(msg.sender == owner || _operatorApprovals[owner][msg.sender], "You aren't allowed approve this token");
+        require(msg.sender == owner || operatorApprovals[owner][msg.sender], "You aren't allowed approve this token");
 
-        _allowances[tokenId] = approved;
+        allowances[tokenId] = approved;
 
         emit Approval(msg.sender, approved, tokenId);
     }
@@ -93,7 +75,7 @@ contract ScamNFT is IERC721, IERC721Metadata, Ownable {
         require(operator != address(0), "Zero-approve isn't allowed");
         require(operator != msg.sender, "Self-approve isn't allowed");
 
-        _operatorApprovals[msg.sender][operator] = approved;
+        operatorApprovals[msg.sender][operator] = approved;
 
         emit ApprovalForAll(msg.sender, operator, approved);
     }
@@ -103,10 +85,10 @@ contract ScamNFT is IERC721, IERC721Metadata, Ownable {
      */
     function mint(address to, uint256 tokenId) external onlyOwner {
         require(to != address(0), "Zero address to mint isn't allowed");
-        require(_tokenOwners[tokenId] == address(0), "Token was already minted");
+        require(tokenOwners[tokenId] == address(0), "Token was already minted");
 
-        _tokenOwners[tokenId] = to;
-        _balances[to] += 1;
+        tokenOwners[tokenId] = to;
+        balances[to] += 1;
 
         emit Transfer(address(0), to, tokenId);
     }
@@ -120,8 +102,8 @@ contract ScamNFT is IERC721, IERC721Metadata, Ownable {
 
         require(isAllowedAction, "You aren't allowed to burn this token");
 
-        _tokenOwners[tokenId] = address(0);
-        _balances[owner] -= 1;
+        tokenOwners[tokenId] = address(0);
+        balances[owner] -= 1;
 
         emit Transfer(owner, address(0), tokenId);
     }
@@ -135,9 +117,9 @@ contract ScamNFT is IERC721, IERC721Metadata, Ownable {
         bool isAllowedAction = _isOwnerOrApproved(msg.sender, tokenId);
 
         require(isAllowedAction, "You aren't allowed to transfer this token");
-        _tokenOwners[tokenId] = to;
-        _balances[from] -= 1;
-        _balances[to] += 1;
+        tokenOwners[tokenId] = to;
+        balances[from] -= 1;
+        balances[to] += 1;
 
         emit Transfer(from, to, tokenId);
     }
@@ -163,11 +145,11 @@ contract ScamNFT is IERC721, IERC721Metadata, Ownable {
     }
 
     function _isOwnerOrApproved(address operator, uint tokenId) internal view returns (bool) {
-        address owner = _ownerOf(tokenId);
+        address owner = tokenOwners[tokenId];
         return (
             operator == owner ||
-            _isApprovedForAll(owner, operator) ||
-            _getApproved(tokenId) == operator
+            operatorApprovals[owner][operator] ||
+            allowances[tokenId] == operator
         );
     }
 
@@ -189,7 +171,7 @@ contract ScamNFT is IERC721, IERC721Metadata, Ownable {
     }
 
     function _requireMinted(uint256 tokenId) internal view returns (address) {
-        address owner = _tokenOwners[tokenId];
+        address owner = tokenOwners[tokenId];
         require(owner != address(0), "Token wasn't minted");
         return owner;
     }

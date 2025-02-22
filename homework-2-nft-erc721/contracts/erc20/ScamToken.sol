@@ -6,48 +6,34 @@ import {IERC20Metadata} from "./IERC20Metadata.sol";
 import {Ownable} from "../util/Ownable.sol";
 
 contract ScamToken is IERC20, IERC20Metadata, Ownable {
-    mapping(address => uint256) private _balances;
-    mapping(address => mapping(address => uint256)) private _allowances;
-    uint256 private _totalSupply;
-
-    constructor() Ownable(msg.sender) {
-        _totalSupply = 1e24;
-        _balances[msg.sender] = _totalSupply;
-    }
-
     /**
      * Имя токена
      */
-    function name() external pure returns (string memory) {
-        return "ScamToken1337";
-    }
-
+    string constant public name = "ScamToken1337";
     /**
      * Символ токена
      */
-    function symbol() external pure returns (string memory) {
-        return "SCM";
-    }
+    string constant public symbol = "SCM";
 
     /**
      * Количество знаков токена
      */
-    function decimals() external pure returns (uint8) {
-        return 18;
-    }
+    uint8 constant public decimals = 18;
 
-    /**
-     * Общее количество токенов
-     */
-    function totalSupply() external view returns (uint256) {
-        return _totalSupply;
+    mapping(address => uint256) public balances;
+    mapping(address => mapping(address => uint256)) private _allowances;
+    uint256 public totalSupply;
+
+    constructor() Ownable(msg.sender) {
+        totalSupply = 1e24;
+        balances[msg.sender] = totalSupply;
     }
 
     /**
      * Баланс токенов кошелька
      */
     function balanceOf(address owner) external view returns (uint256) {
-        return _balances[owner];
+        return balances[owner];
     }
 
     /**
@@ -81,7 +67,7 @@ contract ScamToken is IERC20, IERC20Metadata, Ownable {
      * Проверяет допустимое разрешение и уменьшает разрешение на кол-во
      */
     function _checkAllowance(address owner, address spender, uint256 value) internal {
-        uint256 currAllowance = this.allowance(owner, spender);
+        uint256 currAllowance = _allowances[owner][spender];
         require(currAllowance >= value, "Allowance decrease zero isn't allowed");
         _approve(owner, spender, currAllowance - value);
     }
@@ -90,9 +76,7 @@ contract ScamToken is IERC20, IERC20Metadata, Ownable {
      * Выдать разрешение на использование токенов
      */
     function approve(address spender, uint256 value) external returns (bool) {
-        require(spender != address(0), "Spender Zero address isn't allowed in approve");
-        address owner = msg.sender;
-        _approve(owner, spender, value);
+        _approve(msg.sender, spender, value);
         return true;
     }
 
@@ -100,8 +84,6 @@ contract ScamToken is IERC20, IERC20Metadata, Ownable {
      * Внутренняя функция на разрешение использования токенов
      */
     function _approve(address owner, address spender, uint256 value) internal {
-        require(owner != address(0), "Owner Zero address isn't allowed in approve");
-        require(spender != address(0), "Owner Zero address isn't allowed in approve");
         _allowances[owner][spender] = value;
         emit Approval(owner, spender, value);
     }
@@ -132,19 +114,19 @@ contract ScamToken is IERC20, IERC20Metadata, Ownable {
          * Перевод с нулевого адреса == mint
          */
         if (from == address(0)) {
-            _totalSupply += value;
+            totalSupply += value;
         } else {
-            uint256 fromBalance = _balances[from];
+            uint256 fromBalance = balances[from];
             require(fromBalance >= value, "Balance decrease zero isn't allowed");
-            _balances[from] = fromBalance - value;
+            balances[from] = fromBalance - value;
         }
         /**
          * Перевод на нулевой адрес == burn
          */
         if (to == address(0)) {
-            _totalSupply -= value;
+            totalSupply -= value;
         } else {
-            _balances[to] = _balances[to] + value;
+            balances[to] += value;
         }
 
         emit Transfer(from, to, value);
