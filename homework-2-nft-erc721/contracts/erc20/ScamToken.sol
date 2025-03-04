@@ -47,8 +47,19 @@ contract ScamToken is IERC20, IERC20Metadata, Ownable {
      * Перевести токены от отправителя (вызывающий функцию)
      */
     function transfer(address to, uint256 value) external returns (bool) {
-        require(to != address(0), "Transfer to Zero address isn't allowed");
-        _transfer(msg.sender, to, value);
+        require(balances[msg.sender] >= value, "Balance decrease zero isn't allowed");
+        balances[msg.sender] -= value;
+
+        /**
+         * Перевод на нулевой адрес == burn
+         */
+        if (to == address(0)) {
+            totalSupply -= value;
+        } else {
+            balances[to] += value;
+        }
+
+        emit Transfer(msg.sender, to, value);
         return true;
     }
 
@@ -56,70 +67,11 @@ contract ScamToken is IERC20, IERC20Metadata, Ownable {
      * Перевести токены от отправителя (нужно разрешение)
      */
     function transferFrom(address from, address to, uint256 value) external returns (bool) {
-        require(from != address(0), "Transfer from Zero address isn't allowed");
-        require(to != address(0), "Transfer to Zero address isn't allowed");
         _checkAllowance(from, msg.sender, value);
-        _transfer(from, to, value);
-        return true;
-    }
 
-    /**
-     * Проверяет допустимое разрешение и уменьшает разрешение на кол-во
-     */
-    function _checkAllowance(address owner, address spender, uint256 value) internal {
-        uint256 currAllowance = _allowances[owner][spender];
-        require(currAllowance >= value, "Allowance decrease zero isn't allowed");
-        _approve(owner, spender, currAllowance - value);
-    }
+        require(balances[from] >= value, "Balance decrease zero isn't allowed");
+        balances[from] -= value;
 
-    /**
-     * Выдать разрешение на использование токенов
-     */
-    function approve(address spender, uint256 value) external returns (bool) {
-        _approve(msg.sender, spender, value);
-        return true;
-    }
-
-    /**
-     * Внутренняя функция на разрешение использования токенов
-     */
-    function _approve(address owner, address spender, uint256 value) internal {
-        _allowances[owner][spender] = value;
-        emit Approval(owner, spender, value);
-    }
-
-    /**
-     * Выпустить новые токены (перевести с нулевого адреса)
-     */
-    function mint(address account, uint256 value) external onlyOwner {
-        require(account != address(0), "Mint to Zero address isn't allowed");
-        _transfer(address(0), account, value);
-    }
-
-    /**
-     * Сжечь токены (перевести на нулевой адрес)
-     */
-    function burn(address account, uint256 value) external onlyOwner {
-        require(account != address(0), "Burn from Zero address isn't allowed");
-        _transfer(account, address(0), value);
-    }
-
-    /**
-     * Внутренняя функция перевода токенов
-     */
-    function _transfer(address from, address to, uint256 value) internal  {
-        require(from != address(0) && to != address(0), "Transfer from Zero to Zero addresses isn't allowed");
-
-        /**
-         * Перевод с нулевого адреса == mint
-         */
-        if (from == address(0)) {
-            totalSupply += value;
-        } else {
-            uint256 fromBalance = balances[from];
-            require(fromBalance >= value, "Balance decrease zero isn't allowed");
-            balances[from] = fromBalance - value;
-        }
         /**
          * Перевод на нулевой адрес == burn
          */
@@ -130,5 +82,46 @@ contract ScamToken is IERC20, IERC20Metadata, Ownable {
         }
 
         emit Transfer(from, to, value);
+        return true;
+    }
+
+    /**
+     * Проверяет допустимое разрешение и уменьшает разрешение на кол-во
+     */
+    function _checkAllowance(address owner, address spender, uint256 value) internal {
+        require(_allowances[owner][spender] >= value, "Allowance decrease zero isn't allowed");
+        _allowances[owner][spender] -= value;
+        emit Approval(owner, spender, value);
+    }
+
+    /**
+     * Выдать разрешение на использование токенов
+     */
+    function approve(address spender, uint256 value) external returns (bool) {
+        _allowances[msg.sender][spender] = value;
+        emit Approval(msg.sender, spender, value);
+        return true;
+    }
+
+    /**
+     * Выпустить новые токены (перевести с нулевого адреса)
+     */
+    function mint(address account, uint256 value) external onlyOwner {
+        require(account != address(0), "Mint to Zero address isn't allowed");
+        totalSupply += value;
+        balances[account] += value;
+        emit Transfer(address(0), account, value);
+    }
+
+    /**
+     * Сжечь токены (перевести на нулевой адрес)
+     */
+    function burn(address account, uint256 value) external onlyOwner {
+        require(account != address(0), "Burn from Zero address isn't allowed");
+        require(balances[account] >= value, "Balance decrease zero isn't allowed");
+        balances[account] -= value;
+        totalSupply -= value;
+
+        emit Transfer(account, address(0), value);
     }
 }
