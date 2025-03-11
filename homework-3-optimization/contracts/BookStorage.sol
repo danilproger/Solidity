@@ -12,6 +12,7 @@ contract BookStorage {
     }
 
     Book[] public books;
+    mapping(string => uint256) public bookPrices;
 
     function addBook(
         string memory title,
@@ -47,5 +48,40 @@ contract BookStorage {
             sum += books[i].price;
         }
         return sum;
+    }
+
+    function addBook(
+        string calldata title,
+        string calldata author,
+        uint256 pageCount,
+        string calldata genre,
+        uint256 publicationYear,
+        uint256 price
+    ) external {
+        books.push(Book(title, author, pageCount, genre, publicationYear, price));
+        bookPrices[title] = price;
+    }
+
+    function updatePrice(string calldata title, uint256 newPrice) external {
+        require(bookPrices[title] > 0, "Book not found");
+        for (uint256 i = 0; i < books.length; i++) {
+            if (keccak256(bytes(books[i].title)) == keccak256(bytes(title))) {
+                books[i].price = newPrice;
+                bookPrices[title] = newPrice;
+                break;
+            }
+        }
+    }
+
+    function removeBook(uint256 index) external {
+        require(index < books.length, "Index out of bounds");
+        delete bookPrices[books[index].title];
+        books[index] = books[books.length - 1];
+        books.pop();
+    }
+
+    function buyBook(string calldata title) external payable {
+        require(bookPrices[title] > 0, "Book not found");
+        require(msg.value >= bookPrices[title], "Insufficient funds");
     }
 }

@@ -13,7 +13,7 @@ describe("BookStorage", function () {
     it("Должен добавлять книгу", async function () {
         await bookStorage.addBook("1984", "George Orwell", 328, "Dystopia", 1949, ethers.parseEther("0.1"));
 
-        const book = await bookStorage.getBook(0);
+        const book = await bookStorage.estimateGas.getBook(0);
         expect(book[0]).to.equal("1984");
         expect(book[1]).to.equal("George Orwell");
         expect(book[2]).to.equal(328);
@@ -40,8 +40,7 @@ describe("BookStorage", function () {
         expect(totalCost).to.equal(ethers.parseEther("0.3"));
     });
 
-    /*
     it("Должен выбрасывать ошибку при доступе к несуществующей книге", async function () {
         await expect(bookStorage.getBook(0)).to.be.revertedWith("Index out of bounds");
-    });*/
+    });
 });
