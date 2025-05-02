@@ -1,2 +1,4 @@
 .idea/
 otus-solana.iml
+**/.env
+**/node_modules
