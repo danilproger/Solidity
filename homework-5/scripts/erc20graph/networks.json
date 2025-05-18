@@ -1,0 +1,8 @@
+{
+  "sepolia": {
+    "ScamToken": {
+      "address": "0x3EF9E183958C0E393a5dE9DC7868ce1eaf08096A",
+      "startBlock": 8344333
+    }
+  }
+}
