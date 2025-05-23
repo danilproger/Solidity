@@ -2,3 +2,5 @@
 otus-solana.iml
 **/.env
 **/node_modules
+**/generated
+**/build
