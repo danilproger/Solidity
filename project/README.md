@@ -161,4 +161,5 @@ project/
 npm install
 npx hardhat compile
 npx hardhat test
+npx hardhat coverage
 ```

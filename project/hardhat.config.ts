@@ -1,6 +1,7 @@
 import {HardhatUserConfig} from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
-import "./scripts/deploy"
+import "./scripts/deploy";
+import "solidity-coverage";
 
 const prodConfig = (): HardhatUserConfig => ({
   solidity: {

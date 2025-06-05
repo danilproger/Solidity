@@ -176,7 +176,7 @@ contract PredictionMarket is AccessControl, ReentrancyGuard {
     }
 
     // View Functions
-    function getEvent(
+    function getMarketEvent(
         uint256 eventId
     ) external view eventExists(eventId) returns (
         string memory description,
